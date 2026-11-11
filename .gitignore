@@ -1,0 +1,16 @@
+# Local Python environment
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Reference audit docs and duplicate nested copy
+files/
+f1-top10-predictor/
+
+# Local demo video output (uploaded separately to LinkedIn)
+*.mp4
+
+# OS artifacts
+.DS_Store
+Thumbs.db

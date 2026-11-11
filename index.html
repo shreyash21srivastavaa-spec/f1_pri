@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Who scores? F1 top-10 model, 2024 backtest</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E8EAEC;--panel:#F7F8F9;--ink:#12161B;--mut:#5B6570;--line:#CBD0D5;--flag:#F2C200;--hit:#0A8F55;--hitt:#066B3F;--bar:#12161B;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hit:#35E69E;--hitt:#7CF2C3;--bg:#14171B;--panel:#1D2127;--ink:#ECEFF2;--mut:#98A2AD;--line:#2E353D;--bar:#ECEFF2}}
+:root[data-theme="dark"]{--hit:#35E69E;--hitt:#7CF2C3;--bg:#14171B;--panel:#1D2127;--ink:#ECEFF2;--mut:#98A2AD;--line:#2E353D;--bar:#ECEFF2}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 'Instrument Sans',system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 20px 64px}
+h1,h2,.num{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;letter-spacing:.2px}
+h1{font-size:clamp(38px,7vw,68px);line-height:.98;margin:0 0 14px;max-width:14ch}
+h2{font-size:26px;margin:0 0 6px}
+.lede{max-width:62ch;color:var(--mut);margin:0 0 28px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.tag-badge{font:600 12px/1 'Instrument Sans',sans-serif;color:var(--mut);display:inline-flex;align-items:center;gap:6px;letter-spacing:.3px;text-transform:uppercase}
+.tag-badge::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--hit)}
+.theme-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:4px;font:600 12px 'Instrument Sans',sans-serif;cursor:pointer;transition:border-color .15s}
+.theme-btn:hover{border-color:var(--ink)}
+.duel-box{background:var(--panel);border:1px solid var(--line);padding:22px 24px;margin:0 0 30px}
+.duel-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.duel-btn{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 14px;font:600 13px 'Instrument Sans',sans-serif;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.duel-btn[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.duel-content{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+.duel-text h3{font:700 24px/1.1 'Barlow Condensed',sans-serif;margin:0 0 8px;letter-spacing:.2px}
+.duel-text p{margin:0;color:var(--mut);font-size:14px;line-height:1.55;max-width:62ch}
+.duel-metric{background:var(--bg);border:1px solid var(--line);padding:14px 20px;text-align:center;min-width:130px}
+.duel-metric .v{font:700 36px/1 'Barlow Condensed',sans-serif;display:block;color:var(--ink)}
+.duel-metric .l{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--mut);letter-spacing:.4px}
+.duel-bar{margin-top:6px;height:6px;background:var(--line);border-radius:3px;overflow:hidden;display:flex}
+.duel-bar i{height:100%;transition:width .4s ease,background-color .3s}
+.stepper-wrap{margin-bottom:34px}
+.stepper-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.step-btn{border:1px solid var(--line);border-top:3px solid var(--line);background:var(--panel);color:var(--ink);padding:12px 14px;text-align:left;cursor:pointer;transition:all .15s;border-radius:0 0 4px 4px}
+.step-btn b{display:block;font:700 18px/1.1 'Barlow Condensed',sans-serif;margin-bottom:3px}
+.step-btn span{font-size:12px;color:var(--mut)}
+.step-btn[aria-selected="true"]{border-top-color:var(--flag);background:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.step-panel{background:var(--panel);border:1px solid var(--line);padding:20px 24px}
+.step-panel-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.step-panel-title{font:700 20px/1 'Barlow Condensed',sans-serif;margin:0}
+.step-chip{background:var(--bg);border:1px solid var(--line);padding:3px 9px;border-radius:3px;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+.step-panel p{margin:0 0 14px;color:var(--mut);font-size:14px;line-height:1.55}
+.step-tags{display:flex;flex-wrap:wrap;gap:8px}
+.step-tag{background:var(--bg);border:1px solid var(--line);padding:5px 11px;font-size:12px;border-radius:4px;color:var(--ink);display:inline-flex;align-items:center;gap:8px}
+.step-tag b{font-weight:600;color:var(--hitt)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:40px}
+.stat-card{background:var(--panel);border:1px solid var(--line);padding:16px 18px;border-radius:4px;cursor:pointer;text-align:left;transition:transform .15s,border-color .15s,box-shadow .15s}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.stat-card b{display:block;font:700 38px/1 'Barlow Condensed',sans-serif;color:var(--ink);margin-bottom:4px}
+.stat-card span{font-size:13px;color:var(--mut);display:block;line-height:1.4}
+.stat-hint{margin-top:10px;font-size:11px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:4px;opacity:.7}
+.stat-card:hover .stat-hint{opacity:1;color:var(--hitt)}
+section{margin-top:48px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;margin-bottom:8px}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 11px;border-radius:4px;font:600 13px 'Instrument Sans',sans-serif;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible{outline:3px solid var(--flag);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;margin:10px 0 18px}
+.reveal{border:0;background:var(--flag);color:#12161B;font:700 14px 'Instrument Sans',sans-serif;padding:10px 18px;border-radius:4px;cursor:pointer}
+.score{font-size:14px;color:var(--mut)}.score .rn{display:block;font:700 32px/1.05 'Barlow Condensed',sans-serif;color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:14px;background:var(--panel);border:1px solid var(--line)}
+.grid li{list-style:none}.grid{margin:0;list-style:none}
+.grid li:nth-child(even){transform:translateY(22px)}.grid{padding-bottom:36px}
+.slot{position:relative;display:grid;grid-template-columns:34px 1fr auto;gap:2px 10px;align-items:center;padding:8px 10px;border-left:5px solid var(--tc);background:var(--bg);min-height:56px}
+.slot .g{font:700 24px/1 'Barlow Condensed',sans-serif;color:var(--mut)}
+.slot .nm{font-weight:600;line-height:1.2}.slot .tm{font-size:12px;color:var(--mut)}
+.slot .pr{font:700 20px/1 'Barlow Condensed',sans-serif;text-align:right}
+.slot .meter{grid-column:2/4;height:4px;background:var(--line)}.slot .meter i{display:block;height:100%;background:var(--bar)}
+.slot .res{grid-column:1/4;font-size:12px;font-weight:600;display:none}
+.shown .slot .res{display:block}
+.shown .slot.miss{background:color-mix(in srgb,var(--flag) 26%,var(--bg));outline:2px solid var(--flag)}
+.legend{font-size:13px;color:var(--mut);margin-top:34px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+.panel{background:var(--panel);border:1px solid var(--line);padding:20px}
+svg{width:100%;height:auto;display:block}svg text{fill:var(--ink);font:500 12px 'Instrument Sans',sans-serif}svg .m{fill:var(--mut)}
+.imp{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;font-size:13px;margin:7px 0}.imp i{display:block;height:10px;background:var(--bar)}
+.note p{max-width:66ch;margin:0 0 12px}.src{margin-top:48px;font-size:13px;color:var(--mut);max-width:70ch}
+.why{max-width:64ch;margin:0 0 30px}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;counter-reset:s;margin:0 0 30px;padding:0;list-style:none}
+.flow li{counter-increment:s;padding:4px 18px 4px 0;border-top:3px solid var(--ink);font-size:14px;color:var(--mut)}
+.flow li b{display:block;color:var(--ink);font:700 19px 'Barlow Condensed',sans-serif;padding:8px 0 2px}
+.flow li b::before{content:counter(s) '. '}
+.ans{margin:0 0 30px;max-width:64ch}.ans b{font:700 32px/1.1 'Barlow Condensed',sans-serif;display:block;margin-bottom:6px}.ans span{color:var(--mut)}
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+.banner{display:none}
+.banner.on{display:flex;gap:22px;align-items:center;position:relative;padding:28px 24px 20px;margin-bottom:16px;background:var(--panel);border:2px solid var(--hit);overflow:hidden}
+.banner.perfect{border-color:var(--flag)}
+.banner.perfect::before{content:'';position:absolute;inset:0 0 auto 0;height:12px;background:repeating-conic-gradient(var(--ink) 0 25%,var(--panel) 0 50%) 0 0/12px 12px}
+.banner h3{font:700 clamp(28px,5vw,44px)/1 'Barlow Condensed',sans-serif;margin:0 0 6px}
+.banner p{margin:0;color:var(--mut)}.banner p b{color:var(--ink)}
+.ring{--p:0;position:relative;flex:none;width:112px;height:112px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--hit) calc(var(--p)*1%),var(--line) 0)}
+.ring::before{content:'';position:absolute;inset:11px;border-radius:50%;background:var(--panel)}
+.ring b{position:relative;font:700 30px 'Barlow Condensed',sans-serif}
+.banner.on .ring{animation:fill 1s ease-out forwards}
+@keyframes fill{to{--p:var(--v)}}
+.shown .slot.hit{outline:2px solid var(--hit);background:color-mix(in srgb,var(--hit) 15%,var(--bg));animation:pop .4s both;animation-delay:calc(var(--i)*40ms)}
+.shown .slot.hit .res{color:var(--hitt)}
+@keyframes pop{from{opacity:.3;transform:scale(.97)}}
+.map{display:grid;grid-template-columns:repeat(12,1fr);gap:6px}
+.map button{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 8px 8px;text-align:left;cursor:pointer;font:600 12px 'Instrument Sans',sans-serif;display:grid;gap:2px}
+.map b{font:700 17px 'Barlow Condensed',sans-serif}.map span{color:var(--mut)}
+.map i{display:block;height:5px;background:var(--hit);margin-top:6px}
+.map .perf{outline:2px solid var(--hit)}
+@media (max-width:760px){.cols{grid-template-columns:1fr}.map{grid-template-columns:repeat(4,1fr)}.banner.on{flex-direction:column;text-align:center}.grid{gap:6px 8px;padding:8px}.slot{grid-template-columns:26px 1fr auto;padding:6px 8px}.slot .pr{font-size:17px}.imp{grid-template-columns:120px 1fr 36px}.stepper-nav{grid-template-columns:1fr 1fr}.duel-content{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.stepper-nav{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.meter i{transition:width .35s}}
+@media (prefers-reduced-motion:reduce){.banner.on .ring{--p:var(--v);animation:none}.shown .slot.hit{animation:none}}
+</style></head><body><main>
+<div class="top-bar">
+  <span class="tag-badge">Formula 1 ML Forecaster · 2024 Backtest</span>
+  <button id="theme-btn" class="theme-btn" type="button" aria-label="Toggle color theme">◐ Dark Mode</button>
+</div>
+<h1>Who finishes in the top 10?</h1>
+<p class="lede">Before lights out, this machine learning model estimates the probability that each driver scores points. Backtested against the complete 2024 season — zero future data leaked during training.</p>
+
+<div class="duel-box" id="duel">
+  <div class="duel-nav" role="tablist" aria-label="Model versus simple baseline">
+    <button class="duel-btn" id="d-btn-0" role="tab" aria-selected="true" onclick="setDuel(0)">⚡ ML Model (84.1%)</button>
+    <button class="duel-btn" id="d-btn-1" role="tab" aria-selected="false" onclick="setDuel(1)">⏱ Free Guess (83.7%)</button>
+    <button class="duel-btn" id="d-btn-2" role="tab" aria-selected="false" onclick="setDuel(2)">⚖ The Showdown (+2.1 pts)</button>
+  </div>
+  <div class="duel-content">
+    <div class="duel-text">
+      <h3 id="duel-title">Machine Learning Forest (84.1% Accuracy)</h3>
+      <p id="duel-desc">Trained strictly on historical seasons (2018–2023), this 300-tree ensemble predicts points probability before lights out. It digests starting grid, qualifying gap to pole, recent driver & team scoring form, and circuit history.</p>
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--mut);margin-bottom:4px">
+          <span id="duel-bar-l">MODEL ACCURACY (84.1%)</span><span id="duel-bar-r">GRID RULE BASELINE (83.7%)</span>
+        </div>
+        <div class="duel-bar">
+          <i id="duel-bar-fill" style="width:84.1%;background:var(--hit)"></i>
+        </div>
+      </div>
+    </div>
+    <div class="duel-metric">
+      <span class="v" id="duel-val">84.1%</span>
+      <span class="l" id="duel-lbl">2024 Accuracy</span>
+      <div id="duel-sub" style="font-size:11px;color:var(--mut);margin-top:6px">403 of 479 correct</div>
+    </div>
+  </div>
+</div>
+
+<div class="stepper-wrap" id="stepper">
+  <div class="stepper-nav" role="tablist" aria-label="Model pipeline steps">
+    <button class="step-btn" id="s-btn-0" role="tab" aria-selected="true" onclick="setStep(0)">
+      <b>01. Inputs</b>
+      <span>Grid, form & pace</span>
+    </button>
+    <button class="step-btn" id="s-btn-1" role="tab" aria-selected="false" onclick="setStep(1)">
+      <b>02. Forest</b>
+      <span>300 shallow trees</span>
+    </button>
+    <button class="step-btn" id="s-btn-2" role="tab" aria-selected="false" onclick="setStep(2)">
+      <b>03. Output</b>
+      <span>0–100% odds score</span>
+    </button>
+    <button class="step-btn" id="s-btn-3" role="tab" aria-selected="false" onclick="setStep(3)">
+      <b>04. Test</b>
+      <span>Walk-forward backtest</span>
+    </button>
+  </div>
+  <div class="step-panel" id="step-panel" role="tabpanel">
+    <div class="step-panel-head">
+      <h3 class="step-panel-title" id="step-title">Inputs: What feeds each prediction</h3>
+      <span class="step-chip" id="step-chip">5 Core Feature Groups</span>
+    </div>
+    <p id="step-desc">Features are strictly lagged so no car peeks at results from the same Sunday. Grid position and qualifying gap carry almost half the decision weight, complemented by rolling momentum.</p>
+    <div class="step-tags" id="step-tags"></div>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<section aria-labelledby="h-race">
+<h2 id="h-race">Try it: pick a 2024 race</h2>
+<div class="tabs" id="tabs" role="group" aria-label="2024 rounds"></div>
+<div class="bar"><div class="score" id="score"></div><button class="reveal" id="rv" aria-pressed="false">Reveal result</button></div>
+<div id="banner" aria-live="polite"></div>
+<div id="wrap"><ol class="grid" id="grid"></ol></div>
+<p class="legend">Drivers are in starting-grid order (PL is a pit-lane start). The percentage is the model's chance of a points finish. Once you reveal the result, green means it called that driver right and yellow means it did not.</p>
+<h2 style="margin-top:44px">Season hit map</h2>
+<p class="lede" style="margin-bottom:14px">Each tile is one 2024 race and the share of drivers called right. Outlined tiles were perfect. Tap one to open it with the result showing.</p>
+<div class="map" id="map"></div>
+</section>
+
+<section class="cols">
+<div><h2>Model vs the simple guess</h2>
+<p class="lede" style="margin-bottom:14px">Accuracy per season, each trained only on earlier years. The rule: "starts top 10, finishes top 10."</p>
+<div class="panel"><svg id="wf" viewBox="0 0 460 250" role="img" aria-label="Model versus grid-only rule accuracy by season"></svg></div></div>
+<div><h2>What the model leans on</h2>
+<p class="lede" style="margin-bottom:14px">How much each input mattered inside the forest. Qualifying position and grid together carry close to half.</p>
+<div class="panel" id="imp"></div></div>
+</section>
+
+<section class="note"><h2>What the numbers don't say</h2>
+<p>Most of the signal is where cars start. The grid-only guess already gets 83.7% in 2024, so the model's 84.1% is a small step. 2024 is also the year the two are closest; in 2022 and 2023 the model was 4.5 and 5.5 points ahead.</p>
+<p>An earlier version of the team-form inputs let one driver's row see his teammate's result from the same race. That is fixed here: team form is averaged per race, then lagged. The scores barely moved.</p>
+<p>Weather, tyre strategy, penalties after qualifying and breakdowns are not modelled.</p></section>
+<p class="src">Data: Jolpica F1 API (Ergast-compatible), seasons 2015–2024. Model: scikit-learn Random Forest, 300 trees, depth 6. Every season's model is trained only on earlier seasons.</p>
+</main>
+<script>
+const D={"races":[{"r":1,"n":"Bahrain GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.95,"f":1},{"d":"Leclerc","t":"ferrari","g":2,"p":0.853,"f":4},{"d":"Russell","t":"mercedes","g":3,"p":0.85,"f":5},{"d":"Sainz","t":"ferrari","g":4,"p":0.836,"f":3},{"d":"Perez","t":"red_bull","g":5,"p":0.842,"f":2},{"d":"Alonso","t":"aston_martin","g":6,"p":0.822,"f":9},{"d":"Norris","t":"mclaren","g":7,"p":0.783,"f":6},{"d":"Piastri","t":"mclaren","g":8,"p":0.721,"f":8},{"d":"Hamilton","t":"mercedes","g":9,"p":0.751,"f":7},{"d":"Hulkenberg","t":"haas","g":10,"p":0.3,"f":16},{"d":"Tsunoda","t":"rb","g":11,"p":0.563,"f":14},{"d":"Stroll","t":"aston_martin","g":12,"p":0.706,"f":10},{"d":"Albon","t":"williams","g":13,"p":0.251,"f":15},{"d":"Ricciardo","t":"rb","g":14,"p":0.386,"f":13},{"d":"Kevin Magnussen","t":"haas","g":15,"p":0.13,"f":12},{"d":"Bottas","t":"sauber","g":16,"p":0.266,"f":19},{"d":"Zhou","t":"sauber","g":17,"p":0.233,"f":11},{"d":"Sargeant","t":"williams","g":18,"p":0.075,"f":20},{"d":"Ocon","t":"alpine","g":19,"p":0.246,"f":17},{"d":"Gasly","t":"alpine","g":20,"p":0.255,"f":18}]},{"r":2,"n":"Saudi Arabian GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.963,"f":1},{"d":"Leclerc","t":"ferrari","g":2,"p":0.844,"f":3},{"d":"Perez","t":"red_bull","g":3,"p":0.87,"f":2},{"d":"Alonso","t":"aston_martin","g":4,"p":0.85,"f":5},{"d":"Piastri","t":"mclaren","g":5,"p":0.807,"f":4},{"d":"Norris","t":"mclaren","g":6,"p":0.814,"f":8},{"d":"Russell","t":"mercedes","g":7,"p":0.772,"f":6},{"d":"Hamilton","t":"mercedes","g":8,"p":0.763,"f":9},{"d":"Tsunoda","t":"rb","g":9,"p":0.416,"f":15},{"d":"Stroll","t":"aston_martin","g":10,"p":0.586,"f":19},{"d":"Bearman","t":"ferrari","g":11,"p":0.668,"f":7},{"d":"Albon","t":"williams","g":12,"p":0.243,"f":11},{"d":"Kevin Magnussen","t":"haas","g":13,"p":0.199,"f":12},{"d":"Ricciardo","t":"rb","g":14,"p":0.208,"f":16},{"d":"Hulkenberg","t":"haas","g":15,"p":0.104,"f":10},{"d":"Bottas","t":"sauber","g":16,"p":0.164,"f":17},{"d":"Ocon","t":"alpine","g":17,"p":0.221,"f":13},{"d":"Gasly","t":"alpine","g":18,"p":0.197,"f":20},{"d":"Sargeant","t":"williams","g":19,"p":0.056,"f":14},{"d":"Zhou","t":"sauber","g":20,"p":0.128,"f":18}]},{"r":3,"n":"Australian GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.966,"f":19},{"d":"Sainz","t":"ferrari","g":2,"p":0.86,"f":1},{"d":"Norris","t":"mclaren","g":3,"p":0.856,"f":3},{"d":"Leclerc","t":"ferrari","g":4,"p":0.821,"f":2},{"d":"Piastri","t":"mclaren","g":5,"p":0.822,"f":4},{"d":"Perez","t":"red_bull","g":6,"p":0.887,"f":5},{"d":"Russell","t":"mercedes","g":7,"p":0.777,"f":17},{"d":"Tsunoda","t":"rb","g":8,"p":0.302,"f":7},{"d":"Stroll","t":"aston_martin","g":9,"p":0.655,"f":6},{"d":"Alonso","t":"aston_martin","g":10,"p":0.653,"f":8},{"d":"Hamilton","t":"mercedes","g":11,"p":0.669,"f":18},{"d":"Albon","t":"williams","g":12,"p":0.218,"f":11},{"d":"Bottas","t":"sauber","g":13,"p":0.261,"f":14},{"d":"Kevin Magnussen","t":"haas","g":14,"p":0.139,"f":10},{"d":"Ocon","t":"alpine","g":15,"p":0.228,"f":16},{"d":"Hulkenberg","t":"haas","g":16,"p":0.118,"f":9},{"d":"Gasly","t":"alpine","g":17,"p":0.092,"f":13},{"d":"Ricciardo","t":"rb","g":18,"p":0.074,"f":12},{"d":"Zhou","t":"sauber","g":19,"p":0.08,"f":15}]},{"r":4,"n":"Japanese GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.894,"f":1},{"d":"Perez","t":"red_bull","g":2,"p":0.887,"f":2},{"d":"Norris","t":"mclaren","g":3,"p":0.856,"f":5},{"d":"Sainz","t":"ferrari","g":4,"p":0.849,"f":3},{"d":"Alonso","t":"aston_martin","g":5,"p":0.8,"f":6},{"d":"Piastri","t":"mclaren","g":6,"p":0.833,"f":8},{"d":"Hamilton","t":"mercedes","g":7,"p":0.757,"f":9},{"d":"Leclerc","t":"ferrari","g":8,"p":0.807,"f":4},{"d":"Russell","t":"mercedes","g":9,"p":0.72,"f":7},{"d":"Tsunoda","t":"rb","g":10,"p":0.5,"f":10},{"d":"Ricciardo","t":"rb","g":11,"p":0.39,"f":19},{"d":"Hulkenberg","t":"haas","g":12,"p":0.385,"f":11},{"d":"Bottas","t":"sauber","g":13,"p":0.24,"f":14},{"d":"Albon","t":"williams","g":14,"p":0.187,"f":20},{"d":"Ocon","t":"alpine","g":15,"p":0.21,"f":15},{"d":"Stroll","t":"aston_martin","g":16,"p":0.374,"f":12},{"d":"Gasly","t":"alpine","g":17,"p":0.077,"f":16},{"d":"Kevin Magnussen","t":"haas","g":18,"p":0.148,"f":13},{"d":"Sargeant","t":"williams","g":19,"p":0.076,"f":17},{"d":"Zhou","t":"sauber","g":20,"p":0.053,"f":18}]},{"r":5,"n":"Chinese GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.899,"f":1},{"d":"Perez","t":"red_bull","g":2,"p":0.873,"f":3},{"d":"Alonso","t":"aston_martin","g":3,"p":0.841,"f":7},{"d":"Norris","t":"mclaren","g":4,"p":0.864,"f":2},{"d":"Piastri","t":"mclaren","g":5,"p":0.824,"f":8},{"d":"Leclerc","t":"ferrari","g":6,"p":0.822,"f":4},{"d":"Sainz","t":"ferrari","g":7,"p":0.797,"f":5},{"d":"Russell","t":"mercedes","g":8,"p":0.72,"f":6},{"d":"Hulkenberg","t":"haas","g":9,"p":0.533,"f":10},{"d":"Bottas","t":"sauber","g":10,"p":0.396,"f":20},{"d":"Stroll","t":"aston_martin","g":11,"p":0.552,"f":15},{"d":"Ricciardo","t":"rb","g":12,"p":0.377,"f":18},{"d":"Ocon","t":"alpine","g":13,"p":0.195,"f":11},{"d":"Albon","t":"williams","g":14,"p":0.159,"f":12},{"d":"Gasly","t":"alpine","g":15,"p":0.101,"f":13},{"d":"Zhou","t":"sauber","g":16,"p":0.082,"f":14},{"d":"Kevin Magnussen","t":"haas","g":17,"p":0.168,"f":16},{"d":"Hamilton","t":"mercedes","g":18,"p":0.24,"f":9},{"d":"Tsunoda","t":"rb","g":19,"p":0.136,"f":19},{"d":"Sargeant","t":"williams","g":20,"p":0.069,"f":17}]},{"r":6,"n":"Miami GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.9,"f":2},{"d":"Leclerc","t":"ferrari","g":2,"p":0.868,"f":3},{"d":"Sainz","t":"ferrari","g":3,"p":0.843,"f":5},{"d":"Perez","t":"red_bull","g":4,"p":0.848,"f":4},{"d":"Norris","t":"mclaren","g":5,"p":0.83,"f":1},{"d":"Piastri","t":"mclaren","g":6,"p":0.82,"f":13},{"d":"Russell","t":"mercedes","g":7,"p":0.766,"f":8},{"d":"Hamilton","t":"mercedes","g":8,"p":0.663,"f":6},{"d":"Hulkenberg","t":"haas","g":9,"p":0.542,"f":11},{"d":"Tsunoda","t":"rb","g":10,"p":0.457,"f":7},{"d":"Stroll","t":"aston_martin","g":11,"p":0.55,"f":17},{"d":"Gasly","t":"alpine","g":12,"p":0.239,"f":12},{"d":"Ocon","t":"alpine","g":13,"p":0.259,"f":10},{"d":"Albon","t":"williams","g":14,"p":0.164,"f":18},{"d":"Alonso","t":"aston_martin","g":15,"p":0.537,"f":9},{"d":"Bottas","t":"sauber","g":16,"p":0.116,"f":16},{"d":"Sargeant","t":"williams","g":17,"p":0.132,"f":20},{"d":"Kevin Magnussen","t":"haas","g":18,"p":0.21,"f":19},{"d":"Zhou","t":"sauber","g":19,"p":0.072,"f":14},{"d":"Ricciardo","t":"rb","g":20,"p":0.15,"f":15}]},{"r":7,"n":"Emilia Romagna GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.92,"f":1},{"d":"Norris","t":"mclaren","g":2,"p":0.867,"f":2},{"d":"Leclerc","t":"ferrari","g":3,"p":0.859,"f":3},{"d":"Sainz","t":"ferrari","g":4,"p":0.832,"f":5},{"d":"Piastri","t":"mclaren","g":5,"p":0.85,"f":4},{"d":"Russell","t":"mercedes","g":6,"p":0.804,"f":7},{"d":"Tsunoda","t":"rb","g":7,"p":0.723,"f":10},{"d":"Hamilton","t":"mercedes","g":8,"p":0.73,"f":6},{"d":"Ricciardo","t":"rb","g":9,"p":0.453,"f":13},{"d":"Hulkenberg","t":"haas","g":10,"p":0.434,"f":11},{"d":"Perez","t":"red_bull","g":11,"p":0.839,"f":8},{"d":"Ocon","t":"alpine","g":12,"p":0.316,"f":14},{"d":"Stroll","t":"aston_martin","g":13,"p":0.389,"f":9},{"d":"Albon","t":"williams","g":14,"p":0.144,"f":20},{"d":"Gasly","t":"alpine","g":15,"p":0.166,"f":16},{"d":"Bottas","t":"sauber","g":16,"p":0.086,"f":18},{"d":"Zhou","t":"sauber","g":17,"p":0.077,"f":15},{"d":"Kevin Magnussen","t":"haas","g":18,"p":0.089,"f":12},{"d":"Sargeant","t":"williams","g":19,"p":0.054,"f":17},{"d":"Alonso","t":"aston_martin","g":20,"p":0.425,"f":19}]},{"r":8,"n":"Monaco GP","rows":[{"d":"Leclerc","t":"ferrari","g":1,"p":0.888,"f":1},{"d":"Piastri","t":"mclaren","g":2,"p":0.851,"f":2},{"d":"Sainz","t":"ferrari","g":3,"p":0.854,"f":3},{"d":"Norris","t":"mclaren","g":4,"p":0.855,"f":4},{"d":"Russell","t":"mercedes","g":5,"p":0.813,"f":5},{"d":"Max Verstappen","t":"red_bull","g":6,"p":0.821,"f":6},{"d":"Hamilton","t":"mercedes","g":7,"p":0.803,"f":7},{"d":"Tsunoda","t":"rb","g":8,"p":0.618,"f":8},{"d":"Albon","t":"williams","g":9,"p":0.296,"f":9},{"d":"Gasly","t":"alpine","g":10,"p":0.479,"f":10},{"d":"Ocon","t":"alpine","g":11,"p":0.381,"f":17},{"d":"Ricciardo","t":"rb","g":12,"p":0.35,"f":12},{"d":"Stroll","t":"aston_martin","g":13,"p":0.358,"f":14},{"d":"Alonso","t":"aston_martin","g":14,"p":0.325,"f":11},{"d":"Sargeant","t":"williams","g":15,"p":0.135,"f":15},{"d":"Perez","t":"red_bull","g":16,"p":0.62,"f":18},{"d":"Bottas","t":"sauber","g":17,"p":0.075,"f":13},{"d":"Zhou","t":"sauber","g":18,"p":0.052,"f":16},{"d":"Hulkenberg","t":"haas","g":19,"p":0.216,"f":19},{"d":"Kevin Magnussen","t":"haas","g":20,"p":0.146,"f":20}]},{"r":9,"n":"Canadian GP","rows":[{"d":"Russell","t":"mercedes","g":1,"p":0.852,"f":3},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.866,"f":1},{"d":"Norris","t":"mclaren","g":3,"p":0.868,"f":2},{"d":"Piastri","t":"mclaren","g":4,"p":0.844,"f":5},{"d":"Ricciardo","t":"rb","g":5,"p":0.782,"f":8},{"d":"Alonso","t":"aston_martin","g":6,"p":0.791,"f":6},{"d":"Hamilton","t":"mercedes","g":7,"p":0.79,"f":4},{"d":"Tsunoda","t":"rb","g":8,"p":0.615,"f":14},{"d":"Stroll","t":"aston_martin","g":9,"p":0.496,"f":7},{"d":"Albon","t":"williams","g":10,"p":0.295,"f":17},{"d":"Leclerc","t":"ferrari","g":11,"p":0.801,"f":19},{"d":"Sainz","t":"ferrari","g":12,"p":0.754,"f":16},{"d":"Sargeant","t":"williams","g":13,"p":0.229,"f":20},{"d":"Kevin Magnussen","t":"haas","g":14,"p":0.136,"f":12},{"d":"Gasly","t":"alpine","g":15,"p":0.171,"f":9},{"d":"Perez","t":"red_bull","g":16,"p":0.567,"f":18},{"d":"Hulkenberg","t":"haas","g":17,"p":0.077,"f":11},{"d":"Ocon","t":"alpine","g":18,"p":0.12,"f":10},{"d":"Bottas","t":"sauber","g":19,"p":0.094,"f":13},{"d":"Zhou","t":"sauber","g":20,"p":0.054,"f":15}]},{"r":10,"n":"Spanish GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.893,"f":2},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.837,"f":1},{"d":"Hamilton","t":"mercedes","g":3,"p":0.853,"f":3},{"d":"Russell","t":"mercedes","g":4,"p":0.855,"f":4},{"d":"Leclerc","t":"ferrari","g":5,"p":0.811,"f":5},{"d":"Sainz","t":"ferrari","g":6,"p":0.815,"f":6},{"d":"Gasly","t":"alpine","g":7,"p":0.699,"f":9},{"d":"Ocon","t":"alpine","g":8,"p":0.564,"f":10},{"d":"Piastri","t":"mclaren","g":9,"p":0.717,"f":7},{"d":"Alonso","t":"aston_martin","g":10,"p":0.564,"f":12},{"d":"Perez","t":"red_bull","g":11,"p":0.735,"f":8},{"d":"Bottas","t":"sauber","g":12,"p":0.264,"f":16},{"d":"Hulkenberg","t":"haas","g":13,"p":0.259,"f":11},{"d":"Stroll","t":"aston_martin","g":14,"p":0.379,"f":14},{"d":"Zhou","t":"sauber","g":15,"p":0.121,"f":13},{"d":"Kevin Magnussen","t":"haas","g":16,"p":0.097,"f":17},{"d":"Tsunoda","t":"rb","g":17,"p":0.207,"f":19},{"d":"Ricciardo","t":"rb","g":18,"p":0.202,"f":15},{"d":"Sargeant","t":"williams","g":19,"p":0.078,"f":20},{"d":"Albon","t":"williams","g":20,"p":0.061,"f":18}]},{"r":11,"n":"Austrian GP","rows":[{"d":"Max Verstappen","t":"red_bull","g":1,"p":0.841,"f":5},{"d":"Norris","t":"mclaren","g":2,"p":0.877,"f":20},{"d":"Russell","t":"mercedes","g":3,"p":0.867,"f":1},{"d":"Sainz","t":"ferrari","g":4,"p":0.84,"f":3},{"d":"Hamilton","t":"mercedes","g":5,"p":0.824,"f":4},{"d":"Leclerc","t":"ferrari","g":6,"p":0.808,"f":11},{"d":"Piastri","t":"mclaren","g":7,"p":0.789,"f":2},{"d":"Perez","t":"red_bull","g":8,"p":0.75,"f":7},{"d":"Hulkenberg","t":"haas","g":9,"p":0.31,"f":6},{"d":"Ocon","t":"alpine","g":10,"p":0.509,"f":12},{"d":"Ricciardo","t":"rb","g":11,"p":0.393,"f":9},{"d":"Kevin Magnussen","t":"haas","g":12,"p":0.209,"f":8},{"d":"Gasly","t":"alpine","g":13,"p":0.367,"f":10},{"d":"Tsunoda","t":"rb","g":14,"p":0.356,"f":14},{"d":"Alonso","t":"aston_martin","g":15,"p":0.336,"f":18},{"d":"Albon","t":"williams","g":16,"p":0.091,"f":15},{"d":"Stroll","t":"aston_martin","g":17,"p":0.214,"f":13},{"d":"Bottas","t":"sauber","g":18,"p":0.083,"f":16},{"d":"Sargeant","t":"williams","g":19,"p":0.069,"f":19},{"d":"Zhou","t":"sauber","g":20,"p":0.068,"f":17}]},{"r":12,"n":"British GP","rows":[{"d":"Russell","t":"mercedes","g":1,"p":0.887,"f":19},{"d":"Hamilton","t":"mercedes","g":2,"p":0.875,"f":1},{"d":"Norris","t":"mclaren","g":3,"p":0.847,"f":3},{"d":"Max Verstappen","t":"red_bull","g":4,"p":0.857,"f":2},{"d":"Piastri","t":"mclaren","g":5,"p":0.813,"f":4},{"d":"Hulkenberg","t":"haas","g":6,"p":0.765,"f":6},{"d":"Sainz","t":"ferrari","g":7,"p":0.786,"f":5},{"d":"Stroll","t":"aston_martin","g":8,"p":0.583,"f":7},{"d":"Albon","t":"williams","g":9,"p":0.275,"f":9},{"d":"Alonso","t":"aston_martin","g":10,"p":0.504,"f":8},{"d":"Leclerc","t":"ferrari","g":11,"p":0.694,"f":14},{"d":"Sargeant","t":"williams","g":12,"p":0.243,"f":11},{"d":"Tsunoda","t":"rb","g":13,"p":0.275,"f":10},{"d":"Zhou","t":"sauber","g":14,"p":0.127,"f":18},{"d":"Ricciardo","t":"rb","g":15,"p":0.202,"f":13},{"d":"Bottas","t":"sauber","g":16,"p":0.097,"f":15},{"d":"Kevin Magnussen","t":"haas","g":17,"p":0.176,"f":12},{"d":"Ocon","t":"alpine","g":18,"p":0.201,"f":16},{"d":"Gasly","t":"alpine","g":19,"p":0.192,"f":20},{"d":"Perez","t":"red_bull","g":20,"p":0.453,"f":17}]},{"r":13,"n":"Hungarian GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.853,"f":2},{"d":"Piastri","t":"mclaren","g":2,"p":0.865,"f":1},{"d":"Max Verstappen","t":"red_bull","g":3,"p":0.863,"f":5},{"d":"Sainz","t":"ferrari","g":4,"p":0.842,"f":6},{"d":"Hamilton","t":"mercedes","g":5,"p":0.816,"f":3},{"d":"Leclerc","t":"ferrari","g":6,"p":0.805,"f":4},{"d":"Alonso","t":"aston_martin","g":7,"p":0.738,"f":11},{"d":"Stroll","t":"aston_martin","g":8,"p":0.595,"f":10},{"d":"Ricciardo","t":"rb","g":9,"p":0.478,"f":12},{"d":"Tsunoda","t":"rb","g":10,"p":0.404,"f":9},{"d":"Hulkenberg","t":"haas","g":11,"p":0.493,"f":13},{"d":"Bottas","t":"sauber","g":12,"p":0.217,"f":16},{"d":"Albon","t":"williams","g":13,"p":0.223,"f":14},{"d":"Sargeant","t":"williams","g":14,"p":0.166,"f":17},{"d":"Kevin Magnussen","t":"haas","g":15,"p":0.375,"f":15},{"d":"Perez","t":"red_bull","g":16,"p":0.484,"f":7},{"d":"Russell","t":"mercedes","g":17,"p":0.582,"f":8},{"d":"Zhou","t":"sauber","g":18,"p":0.055,"f":19},{"d":"Ocon","t":"alpine","g":19,"p":0.101,"f":18},{"d":"Gasly","t":"alpine","g":20,"p":0.106,"f":20}]},{"r":14,"n":"Belgian GP","rows":[{"d":"Leclerc","t":"ferrari","g":1,"p":0.856,"f":3},{"d":"Perez","t":"red_bull","g":2,"p":0.833,"f":7},{"d":"Hamilton","t":"mercedes","g":3,"p":0.859,"f":1},{"d":"Norris","t":"mclaren","g":4,"p":0.811,"f":5},{"d":"Piastri","t":"mclaren","g":5,"p":0.813,"f":2},{"d":"Russell","t":"mercedes","g":6,"p":0.805,"f":20},{"d":"Sainz","t":"ferrari","g":7,"p":0.773,"f":6},{"d":"Alonso","t":"aston_martin","g":8,"p":0.599,"f":8},{"d":"Ocon","t":"alpine","g":9,"p":0.364,"f":9},{"d":"Albon","t":"williams","g":10,"p":0.343,"f":12},{"d":"Max Verstappen","t":"red_bull","g":11,"p":0.852,"f":4},{"d":"Gasly","t":"alpine","g":12,"p":0.289,"f":13},{"d":"Ricciardo","t":"rb","g":13,"p":0.305,"f":10},{"d":"Bottas","t":"sauber","g":14,"p":0.152,"f":15},{"d":"Stroll","t":"aston_martin","g":15,"p":0.237,"f":11},{"d":"Hulkenberg","t":"haas","g":16,"p":0.28,"f":18},{"d":"Kevin Magnussen","t":"haas","g":17,"p":0.242,"f":14},{"d":"Sargeant","t":"williams","g":18,"p":0.054,"f":17},{"d":"Zhou","t":"sauber","g":19,"p":0.034,"f":19},{"d":"Tsunoda","t":"rb","g":20,"p":0.134,"f":16}]},{"r":15,"n":"Dutch GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.854,"f":1},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.873,"f":2},{"d":"Piastri","t":"mclaren","g":3,"p":0.857,"f":4},{"d":"Russell","t":"mercedes","g":4,"p":0.835,"f":7},{"d":"Perez","t":"red_bull","g":5,"p":0.822,"f":6},{"d":"Leclerc","t":"ferrari","g":6,"p":0.806,"f":3},{"d":"Alonso","t":"aston_martin","g":7,"p":0.735,"f":10},{"d":"Stroll","t":"aston_martin","g":8,"p":0.616,"f":13},{"d":"Gasly","t":"alpine","g":9,"p":0.459,"f":9},{"d":"Sainz","t":"ferrari","g":10,"p":0.723,"f":5},{"d":"Tsunoda","t":"rb","g":11,"p":0.419,"f":17},{"d":"Hulkenberg","t":"haas","g":12,"p":0.328,"f":11},{"d":"Ricciardo","t":"rb","g":13,"p":0.259,"f":12},{"d":"Hamilton","t":"mercedes","g":14,"p":0.734,"f":8},{"d":"Ocon","t":"alpine","g":15,"p":0.129,"f":15},{"d":"Bottas","t":"sauber","g":16,"p":0.076,"f":19},{"d":"Zhou","t":"sauber","g":17,"p":0.058,"f":20},{"d":"Sargeant","t":"williams","g":18,"p":0.093,"f":16},{"d":"Albon","t":"williams","g":19,"p":0.244,"f":14},{"d":"Kevin Magnussen","t":"haas","g":20,"p":0.193,"f":18}]},{"r":16,"n":"Italian GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.867,"f":3},{"d":"Piastri","t":"mclaren","g":2,"p":0.911,"f":2},{"d":"Russell","t":"mercedes","g":3,"p":0.861,"f":7},{"d":"Leclerc","t":"ferrari","g":4,"p":0.835,"f":1},{"d":"Sainz","t":"ferrari","g":5,"p":0.825,"f":4},{"d":"Hamilton","t":"mercedes","g":6,"p":0.808,"f":5},{"d":"Max Verstappen","t":"red_bull","g":7,"p":0.815,"f":6},{"d":"Perez","t":"red_bull","g":8,"p":0.793,"f":8},{"d":"Albon","t":"williams","g":9,"p":0.327,"f":9},{"d":"Hulkenberg","t":"haas","g":10,"p":0.448,"f":17},{"d":"Alonso","t":"aston_martin","g":11,"p":0.49,"f":11},{"d":"Ricciardo","t":"rb","g":12,"p":0.432,"f":13},{"d":"Kevin Magnussen","t":"haas","g":13,"p":0.263,"f":10},{"d":"Gasly","t":"alpine","g":14,"p":0.191,"f":15},{"d":"Ocon","t":"alpine","g":15,"p":0.165,"f":14},{"d":"Tsunoda","t":"rb","g":16,"p":0.155,"f":20},{"d":"Stroll","t":"aston_martin","g":17,"p":0.207,"f":19},{"d":"Colapinto","t":"williams","g":18,"p":0.136,"f":12},{"d":"Bottas","t":"sauber","g":19,"p":0.071,"f":16},{"d":"Zhou","t":"sauber","g":20,"p":0.052,"f":18}]},{"r":17,"n":"Azerbaijan GP","rows":[{"d":"Leclerc","t":"ferrari","g":1,"p":0.878,"f":2},{"d":"Piastri","t":"mclaren","g":2,"p":0.863,"f":1},{"d":"Sainz","t":"ferrari","g":3,"p":0.866,"f":18},{"d":"Perez","t":"red_bull","g":4,"p":0.853,"f":17},{"d":"Russell","t":"mercedes","g":5,"p":0.801,"f":3},{"d":"Max Verstappen","t":"red_bull","g":6,"p":0.816,"f":5},{"d":"Alonso","t":"aston_martin","g":7,"p":0.698,"f":6},{"d":"Colapinto","t":"williams","g":8,"p":0.48,"f":8},{"d":"Albon","t":"williams","g":9,"p":0.416,"f":7},{"d":"Bearman","t":"haas","g":10,"p":0.492,"f":10},{"d":"Tsunoda","t":"rb","g":11,"p":0.225,"f":20},{"d":"Hulkenberg","t":"haas","g":12,"p":0.279,"f":11},{"d":"Stroll","t":"aston_martin","g":13,"p":0.292,"f":19},{"d":"Ricciardo","t":"rb","g":14,"p":0.154,"f":13},{"d":"Norris","t":"mclaren","g":15,"p":0.702,"f":4},{"d":"Bottas","t":"sauber","g":16,"p":0.088,"f":16},{"d":"Zhou","t":"sauber","g":17,"p":0.087,"f":14},{"d":"Gasly","t":"alpine","g":18,"p":0.155,"f":12},{"d":"Hamilton","t":"mercedes","g":19,"p":0.765,"f":9},{"d":"Ocon","t":"alpine","g":20,"p":0.105,"f":15}]},{"r":18,"n":"Singapore GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.893,"f":1},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.859,"f":2},{"d":"Hamilton","t":"mercedes","g":3,"p":0.852,"f":6},{"d":"Russell","t":"mercedes","g":4,"p":0.852,"f":4},{"d":"Piastri","t":"mclaren","g":5,"p":0.856,"f":3},{"d":"Hulkenberg","t":"haas","g":6,"p":0.641,"f":9},{"d":"Alonso","t":"aston_martin","g":7,"p":0.729,"f":8},{"d":"Tsunoda","t":"rb","g":8,"p":0.281,"f":12},{"d":"Leclerc","t":"ferrari","g":9,"p":0.795,"f":5},{"d":"Sainz","t":"ferrari","g":10,"p":0.686,"f":7},{"d":"Albon","t":"williams","g":11,"p":0.476,"f":20},{"d":"Colapinto","t":"williams","g":12,"p":0.461,"f":11},{"d":"Perez","t":"red_bull","g":13,"p":0.694,"f":10},{"d":"Kevin Magnussen","t":"haas","g":14,"p":0.207,"f":19},{"d":"Ocon","t":"alpine","g":15,"p":0.167,"f":13},{"d":"Ricciardo","t":"rb","g":16,"p":0.127,"f":18},{"d":"Stroll","t":"aston_martin","g":17,"p":0.142,"f":14},{"d":"Gasly","t":"alpine","g":18,"p":0.094,"f":17},{"d":"Bottas","t":"sauber","g":19,"p":0.052,"f":16},{"d":"Zhou","t":"sauber","g":20,"p":0.056,"f":15}]},{"r":19,"n":"United States GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.906,"f":4},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.863,"f":3},{"d":"Sainz","t":"ferrari","g":3,"p":0.855,"f":2},{"d":"Leclerc","t":"ferrari","g":4,"p":0.85,"f":1},{"d":"Piastri","t":"mclaren","g":5,"p":0.856,"f":5},{"d":"Gasly","t":"alpine","g":6,"p":0.519,"f":12},{"d":"Alonso","t":"aston_martin","g":7,"p":0.703,"f":13},{"d":"Kevin Magnussen","t":"haas","g":8,"p":0.524,"f":11},{"d":"Perez","t":"red_bull","g":9,"p":0.716,"f":7},{"d":"Tsunoda","t":"rb","g":10,"p":0.322,"f":14},{"d":"Hulkenberg","t":"haas","g":11,"p":0.38,"f":8},{"d":"Ocon","t":"alpine","g":12,"p":0.242,"f":18},{"d":"Stroll","t":"aston_martin","g":13,"p":0.224,"f":15},{"d":"Albon","t":"williams","g":14,"p":0.274,"f":16},{"d":"Colapinto","t":"williams","g":15,"p":0.218,"f":10},{"d":"Bottas","t":"sauber","g":16,"p":0.065,"f":17},{"d":"Hamilton","t":"mercedes","g":17,"p":0.658,"f":20},{"d":"Zhou","t":"sauber","g":18,"p":0.056,"f":19},{"d":"Lawson","t":"rb","g":19,"p":0.158,"f":9},{"d":"Russell","t":"mercedes","g":20,"p":0.788,"f":6}]},{"r":20,"n":"Mexico City GP","rows":[{"d":"Sainz","t":"ferrari","g":1,"p":0.85,"f":1},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.863,"f":6},{"d":"Norris","t":"mclaren","g":3,"p":0.863,"f":2},{"d":"Leclerc","t":"ferrari","g":4,"p":0.844,"f":3},{"d":"Russell","t":"mercedes","g":5,"p":0.818,"f":5},{"d":"Hamilton","t":"mercedes","g":6,"p":0.814,"f":4},{"d":"Kevin Magnussen","t":"haas","g":7,"p":0.689,"f":7},{"d":"Gasly","t":"alpine","g":8,"p":0.316,"f":10},{"d":"Albon","t":"williams","g":9,"p":0.578,"f":19},{"d":"Hulkenberg","t":"haas","g":10,"p":0.53,"f":9},{"d":"Tsunoda","t":"rb","g":11,"p":0.271,"f":20},{"d":"Lawson","t":"rb","g":12,"p":0.302,"f":16},{"d":"Alonso","t":"aston_martin","g":13,"p":0.373,"f":18},{"d":"Stroll","t":"aston_martin","g":14,"p":0.251,"f":11},{"d":"Bottas","t":"sauber","g":15,"p":0.158,"f":14},{"d":"Colapinto","t":"williams","g":16,"p":0.208,"f":12},{"d":"Piastri","t":"mclaren","g":17,"p":0.715,"f":8},{"d":"Perez","t":"red_bull","g":18,"p":0.475,"f":17},{"d":"Zhou","t":"sauber","g":19,"p":0.055,"f":15},{"d":"Ocon","t":"alpine","g":0,"p":0.121,"f":13}]},{"r":21,"n":"S\u00e3o Paulo GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.893,"f":6},{"d":"Russell","t":"mercedes","g":2,"p":0.869,"f":4},{"d":"Tsunoda","t":"rb","g":3,"p":0.667,"f":7},{"d":"Ocon","t":"alpine","g":4,"p":0.67,"f":2},{"d":"Lawson","t":"rb","g":5,"p":0.673,"f":9},{"d":"Leclerc","t":"ferrari","g":6,"p":0.806,"f":5},{"d":"Albon","t":"williams","g":7,"p":0.463,"f":18},{"d":"Piastri","t":"mclaren","g":8,"p":0.779,"f":8},{"d":"Alonso","t":"aston_martin","g":9,"p":0.473,"f":14},{"d":"Stroll","t":"aston_martin","g":10,"p":0.315,"f":19},{"d":"Bottas","t":"sauber","g":11,"p":0.252,"f":13},{"d":"Perez","t":"red_bull","g":12,"p":0.548,"f":11},{"d":"Gasly","t":"alpine","g":13,"p":0.205,"f":3},{"d":"Hamilton","t":"mercedes","g":14,"p":0.649,"f":10},{"d":"Bearman","t":"haas","g":15,"p":0.291,"f":12},{"d":"Colapinto","t":"williams","g":16,"p":0.087,"f":17},{"d":"Max Verstappen","t":"red_bull","g":17,"p":0.648,"f":1},{"d":"Hulkenberg","t":"haas","g":18,"p":0.196,"f":20},{"d":"Zhou","t":"sauber","g":19,"p":0.035,"f":15},{"d":"Sainz","t":"ferrari","g":20,"p":0.646,"f":16}]},{"r":22,"n":"Las Vegas GP","rows":[{"d":"Russell","t":"mercedes","g":1,"p":0.859,"f":1},{"d":"Sainz","t":"ferrari","g":2,"p":0.861,"f":3},{"d":"Gasly","t":"alpine","g":3,"p":0.858,"f":20},{"d":"Leclerc","t":"ferrari","g":4,"p":0.86,"f":4},{"d":"Max Verstappen","t":"red_bull","g":5,"p":0.82,"f":5},{"d":"Norris","t":"mclaren","g":6,"p":0.83,"f":6},{"d":"Tsunoda","t":"rb","g":7,"p":0.708,"f":9},{"d":"Piastri","t":"mclaren","g":8,"p":0.8,"f":7},{"d":"Hulkenberg","t":"haas","g":9,"p":0.559,"f":8},{"d":"Hamilton","t":"mercedes","g":10,"p":0.708,"f":2},{"d":"Ocon","t":"alpine","g":11,"p":0.637,"f":17},{"d":"Kevin Magnussen","t":"haas","g":12,"p":0.438,"f":12},{"d":"Zhou","t":"sauber","g":13,"p":0.189,"f":13},{"d":"Lawson","t":"rb","g":14,"p":0.224,"f":16},{"d":"Perez","t":"red_bull","g":15,"p":0.508,"f":10},{"d":"Alonso","t":"aston_martin","g":16,"p":0.149,"f":11},{"d":"Albon","t":"williams","g":17,"p":0.07,"f":19},{"d":"Stroll","t":"aston_martin","g":18,"p":0.078,"f":15},{"d":"Bottas","t":"sauber","g":19,"p":0.063,"f":18},{"d":"Colapinto","t":"williams","g":20,"p":0.168,"f":14}]},{"r":23,"n":"Qatar GP","rows":[{"d":"Russell","t":"mercedes","g":1,"p":0.88,"f":4},{"d":"Max Verstappen","t":"red_bull","g":2,"p":0.868,"f":1},{"d":"Norris","t":"mclaren","g":3,"p":0.855,"f":10},{"d":"Piastri","t":"mclaren","g":4,"p":0.855,"f":3},{"d":"Leclerc","t":"ferrari","g":5,"p":0.82,"f":2},{"d":"Hamilton","t":"mercedes","g":6,"p":0.814,"f":12},{"d":"Sainz","t":"ferrari","g":7,"p":0.815,"f":6},{"d":"Alonso","t":"aston_martin","g":8,"p":0.41,"f":7},{"d":"Perez","t":"red_bull","g":9,"p":0.711,"f":17},{"d":"Kevin Magnussen","t":"haas","g":10,"p":0.5,"f":9},{"d":"Gasly","t":"alpine","g":11,"p":0.626,"f":5},{"d":"Zhou","t":"sauber","g":12,"p":0.231,"f":8},{"d":"Bottas","t":"sauber","g":13,"p":0.188,"f":11},{"d":"Tsunoda","t":"rb","g":14,"p":0.325,"f":13},{"d":"Stroll","t":"aston_martin","g":15,"p":0.145,"f":18},{"d":"Albon","t":"williams","g":16,"p":0.086,"f":15},{"d":"Lawson","t":"rb","g":17,"p":0.169,"f":14},{"d":"Hulkenberg","t":"haas","g":18,"p":0.192,"f":16},{"d":"Colapinto","t":"williams","g":19,"p":0.067,"f":19},{"d":"Ocon","t":"alpine","g":20,"p":0.342,"f":20}]},{"r":24,"n":"Abu Dhabi GP","rows":[{"d":"Norris","t":"mclaren","g":1,"p":0.864,"f":1},{"d":"Piastri","t":"mclaren","g":2,"p":0.861,"f":10},{"d":"Sainz","t":"ferrari","g":3,"p":0.862,"f":2},{"d":"Max Verstappen","t":"red_bull","g":4,"p":0.821,"f":6},{"d":"Gasly","t":"alpine","g":5,"p":0.804,"f":7},{"d":"Russell","t":"mercedes","g":6,"p":0.818,"f":5},{"d":"Hulkenberg","t":"haas","g":7,"p":0.817,"f":8},{"d":"Alonso","t":"aston_martin","g":8,"p":0.539,"f":9},{"d":"Bottas","t":"sauber","g":9,"p":0.523,"f":18},{"d":"Perez","t":"red_bull","g":10,"p":0.724,"f":20},{"d":"Tsunoda","t":"rb","g":11,"p":0.528,"f":12},{"d":"Lawson","t":"rb","g":12,"p":0.414,"f":17},{"d":"Stroll","t":"aston_martin","g":13,"p":0.259,"f":14},{"d":"Kevin Magnussen","t":"haas","g":14,"p":0.334,"f":16},{"d":"Zhou","t":"sauber","g":15,"p":0.185,"f":13},{"d":"Hamilton","t":"mercedes","g":16,"p":0.627,"f":4},{"d":"Doohan","t":"alpine","g":17,"p":0.335,"f":15},{"d":"Albon","t":"williams","g":18,"p":0.118,"f":11},{"d":"Leclerc","t":"ferrari","g":19,"p":0.745,"f":3},{"d":"Colapinto","t":"williams","g":20,"p":0.075,"f":19}]}],"wf":[{"s":2018,"m":74.8,"b":74.3,"auc":0.832},{"s":2019,"m":75.0,"b":74.3,"auc":0.839},{"s":2020,"m":76.5,"b":74.7,"auc":0.825},{"s":2021,"m":79.1,"b":78.0,"auc":0.847},{"s":2022,"m":77.7,"b":73.2,"auc":0.835},{"s":2023,"m":79.1,"b":73.6,"auc":0.849},{"s":2024,"m":84.1,"b":83.7,"auc":0.908}],"imp":[["Quali position",0.271],["Grid",0.175],["Driver points (5)",0.14],["Team points (3 races)",0.125],["Quali gap to pole",0.1],["Team form (3 races)",0.089],["Driver form (5)",0.078],["Circuit history",0.022]],"auc":0.908,"n":479};
+const TC={mercedes:'#27F4D2',red_bull:'#3671C6',ferrari:'#E8002D',mclaren:'#FF8000',alpine:'#2293D1',aston_martin:'#229971',williams:'#64C4FF',haas:'#B6BABD',sauber:'#52E252',rb:'#6692FF',alphatauri:'#5E8FAA',alfa:'#C92D4B'};
+const $=id=>document.getElementById(id);
+const w=D.wf,y=w[w.length-1],avgM=w.reduce((a,x)=>a+x.m,0)/w.length,avgB=w.reduce((a,x)=>a+x.b,0)/w.length;
+const acc=D.races.map(r=>r.rows.filter(x=>(x.p>=.5)==(x.f<=10)).length/r.rows.length),hi=acc.filter(a=>a>=.9).length;
+const duelData=[
+ {title:'Machine Learning Forest (84.1% Accuracy)',desc:'Trained strictly on historical seasons (2018–2023), this 300-tree ensemble predicts points probability before lights out. It digests starting grid, qualifying gap to pole, recent driver & team scoring form, and circuit history.',val:'84.1%',lbl:'2024 Accuracy',sub:'403 of 479 calls correct',pct:84.1,fill:'var(--hit)',barL:'MODEL ACCURACY (84.1%)',barR:'GRID RULE BASELINE (83.7%)'},
+ {title:'The Naive Baseline: "Start Top 10 = Finish Top 10"',desc:'The free guess anyone can make looking at Saturday\'s grid with zero machine learning. Because modern F1 cars are highly reliable and overtaking is difficult on many tracks, this baseline already scores 83.7% for free.',val:'83.7%',lbl:'Grid Rule Baseline',sub:'401 of 479 calls correct',pct:83.7,fill:'var(--mut)',barL:'MODEL ACCURACY (84.1%)',barR:'GRID RULE BASELINE (83.7%)'},
+ {title:'The Showdown: Does Machine Learning Beat the Baseline?',desc:'A model is only worth deploying if it beats the heuristic anyone gets for free. Across 2018–2024, the model gains +2.1 percentage points on average. In volatile seasons (2022 & 2023), the model gained +4.5 and +5.5 points over the grid.',val:'+2.1 pts',lbl:'7-Yr Average Edge',sub:'+0.4 pts in 2024 · +5.5 pts in 2023',pct:88,fill:'var(--flag)',barL:'7-YEAR ML ADVANTAGE (+2.1 PTS)',barR:'MAX SEASON GAP (+5.5 PTS)'}
+];
+function setDuel(idx){
+ const d=duelData[idx];for(let i=0;i<3;i++){const b=$('d-btn-'+i);if(b)b.setAttribute('aria-selected',i===idx)}
+ $('duel-title').textContent=d.title;$('duel-desc').textContent=d.desc;$('duel-val').textContent=d.val;$('duel-lbl').textContent=d.lbl;$('duel-sub').textContent=d.sub;
+ $('duel-bar-l').textContent=d.barL;$('duel-bar-r').textContent=d.barR;
+ const bar=$('duel-bar-fill');bar.style.width=d.pct+'%';bar.style.background=d.fill;
+}
+const stepData=[
+ {title:'Inputs: What feeds each prediction',chip:'5 Core Feature Groups',desc:'Features are strictly lagged so no car peeks at results from the same Sunday. Grid position and qualifying gap carry almost half the decision weight, complemented by rolling momentum.',tags:[{n:'Qualifying Position',w:'27.1%'},{n:'Starting Grid (P1–P20)',w:'17.5%'},{n:'Driver Rolling Points (5 races)',w:'14.0%'},{n:'Team Points (3 races)',w:'12.5%'},{n:'Qualifying Gap to Pole (s)',w:'10.0%'},{n:'Team Form (3 races)',w:'8.9%'},{n:'Driver Form (5 races)',w:'7.8%'},{n:'Circuit Track Record',w:'2.2%'}]},
+ {title:'Forest: 300 Regularized Decision Trees',chip:'Ensemble Consensus',desc:'An ensemble of 300 scikit-learn decision trees, each trained on bootstrap subsets. Tree depth is strictly capped at 6 to prevent overfitting to freak wet races or bizarre retirements.',tags:[{n:'300 Estimators',w:'Forest'},{n:'Max Tree Depth: 6',w:'Regularized'},{n:'Split Criterion: Gini',w:'Entropy'},{n:'Voting: Average of Trees',w:'Ensemble'}]},
+ {title:'Output: Calibrated Points Probability',chip:'0% to 100% Score',desc:'Each driver is assigned a continuous probability between 0% and 100%. A threshold of ≥ 50% constitutes a prediction that the driver will finish P1–P10 and score championship points.',tags:[{n:'≥ 50% Threshold',w:'Call: Points'},{n:'< 50% Threshold',w:'Call: No Points'},{n:'2024 ROC-AUC: 0.91',w:'High Discrimination'},{n:'Brier Calibration: Tested',w:'Reliable'}]},
+ {title:'Test: Strict Walk-Forward Backtest',chip:'Zero Data Leakage',desc:'Every season\'s model is trained exclusively on earlier years. The 2024 model never saw a single lap of 2024 data during training, providing true out-of-sample backtesting across all 24 rounds.',tags:[{n:'Test Season: 2024',w:'24 Rounds'},{n:'Entries Scored: 479 starts',w:'Out-of-sample'},{n:'Accuracy: 84.1%',w:'Model'},{n:'90%+ Accurate Races: 11 of 24',w:'High Confidence'}]}
+];
+function setStep(idx){
+ const s=stepData[idx];for(let i=0;i<4;i++){const b=$('s-btn-'+i);if(b)b.setAttribute('aria-selected',i===idx)}
+ $('step-title').textContent=s.title;$('step-chip').textContent=s.chip;$('step-desc').textContent=s.desc;
+ $('step-tags').innerHTML=s.tags.map(t=>`<span class="step-tag"><span>${t.n}</span><b>${t.w}</b></span>`).join('');
+}
+setStep(0);
+const themeBtn=$('theme-btn');
+if(themeBtn){
+ const updateThemeLabel=()=>{const isDark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);themeBtn.textContent=isDark?'☀ Light Mode':'◐ Dark Mode'};
+ updateThemeLabel();
+ themeBtn.onclick=()=>{const isDark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',isDark?'light':'dark');updateThemeLabel()};
+}
+const sItems=[
+ [y.m+'%','2024 accuracy over '+D.n+' driver entries, none seen in training','↓ Explore 2024 races',()=>$('h-race').scrollIntoView({behavior:'smooth'})],
+ [y.auc.toFixed(2),'2024 ROC-AUC (0.5 is a coin flip, 1.0 is perfect)','↓ Feature importances',()=>$('imp').scrollIntoView({behavior:'smooth'})],
+ ['+'+(avgM-avgB).toFixed(1)+' pts','average gain over the grid-only guess, 2018–2024','↓ 7-year comparison',()=>$('wf').scrollIntoView({behavior:'smooth'})],
+ [hi+' of '+D.races.length,'races in 2024 where 90% or more of the grid was called right','↓ Season hit map',()=>$('map').scrollIntoView({behavior:'smooth'})]
+];
+$('stats').innerHTML=sItems.map((s,i)=>`<div class="stat-card" data-i="${i}" tabindex="0" role="button" aria-label="${s[0]}: ${s[1]}"><b>${s[0]}</b><span>${s[1]}</span><div class="stat-hint">${s[2]}</div></div>`).join('');
+$('stats').onclick=e=>{const c=e.target.closest('.stat-card');if(c&&sItems[+c.dataset.i])sItems[+c.dataset.i][3]()};
+$('stats').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){const c=e.target.closest('.stat-card');if(c&&sItems[+c.dataset.i]){e.preventDefault();sItems[+c.dataset.i][3]()}}};
+let cur=0,shown=false;
+const tabs=$('tabs');
+D.races.forEach((r,i)=>{const b=document.createElement('button');b.textContent='R'+r.r;b.title=r.n;b.onclick=()=>{cur=i;shown=false;draw()};tabs.appendChild(b)});
+$('rv').onclick=()=>{shown=!shown;draw()};
+function draw(){
+ const r=D.races[cur];[...tabs.children].forEach((b,i)=>b.setAttribute('aria-pressed',i==cur));
+ $('rv').textContent=shown?'Hide result':'Reveal result';$('rv').setAttribute('aria-pressed',shown);
+ $('wrap').className=shown?'shown':'';
+ let hit=0;
+ $('grid').innerHTML=r.rows.map((x,ix)=>{const pred=x.p>=.5,act=x.f<=10;if(pred==act)hit++;
+  const nm=x.d,pos=x.g?x.g:'PL';
+  return `<li><div class="slot${pred==act?' hit':' miss'}" style="--i:${ix};--tc:${TC[x.t]||'#888'}"><span class="g">${pos}</span><span><span class="nm">${nm}</span><br><span class="tm">${x.t.replace(/_/g,' ')}</span></span><span class="pr">${Math.round(x.p*100)}%</span><span class="meter"><i style="width:${x.p*100}%"></i></span><span class="res">${pred==act?'Right: ':'Wrong: '}finished P${x.f}${act?'':', outside the points'}, model said ${pred?'points':'no points'}.</span></div></li>`}).join('');
+ $('score').innerHTML=`<span class="rn">${r.n}</span>Round ${r.r} of ${D.races.length}. `+(shown?'Result revealed.':'Predictions only, result hidden.');
+ const n=r.rows.length,pc=hit/n,tp=[...r.rows].sort((a,b)=>b.p-a.p).slice(0,10).filter(x=>x.f<=10).length,bn=$('banner');
+ if(!shown){bn.className='';bn.innerHTML=''}else{
+  const tag=hit==n?'Perfect race':pc>=.9?'Almost perfect':pc>=.8?'Mostly right':'A hard one';
+  bn.className='banner on'+(hit==n?' perfect':'');
+  bn.innerHTML=`<div class="ring" style="--v:${Math.round(pc*100)}"><b>${hit}/${n}</b></div><div><h3>${tag}</h3><p><b>${hit} of ${n}</b> calls were right. Of the ten drivers it rated most likely to score, <b>${tp}</b> did.</p></div>`}
+}
+$('map').innerHTML=D.races.map((r,i)=>`<button data-i="${i}" class="${acc[i]==1?'perf':''}" title="${r.n}"><b>R${r.r}</b><span>${Math.round(acc[i]*100)}%</span><i style="width:${acc[i]*100}%"></i></button>`).join('');
+$('map').onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=+b.dataset.i;shown=true;draw();$('h-race').scrollIntoView({behavior:'smooth'})};
+draw();
+// walk-forward chart
+(function(){const W=460,H=250,L=34,B=30,T=14,ch=H-B-T,min=60,max=90,sx=(W-L-8)/w.length;let s='';
+ [60,70,80,90].forEach(v=>{const yy=T+ch*(1-(v-min)/(max-min));s+=`<line x1="${L}" x2="${W-8}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text class="m" x="${L-6}" y="${yy+4}" text-anchor="end">${v}</text>`});
+ w.forEach((d,i)=>{const x=L+i*sx+sx*.14,bw=sx*.34;[[d.b,'var(--line)'],[d.m,'var(--bar)']].forEach((p,k)=>{const h=ch*(p[0]-min)/(max-min);s+=`<rect x="${x+k*(bw+3)}" y="${T+ch-h}" width="${bw}" height="${h}" fill="${p[1]}"${k==0?' stroke="var(--mut)" stroke-width=".6"':''}><title>${d.s}: ${k?'model':'grid-only'} ${p[0]}%</title></rect>`});
+  s+=`<text x="${x+bw}" y="${H-10}" text-anchor="middle">${d.s}</text>`});
+ s+=`<rect x="${L}" y="0" width="9" height="9" fill="var(--bar)"/><text x="${L+14}" y="8">Model</text><rect x="${L+70}" y="0" width="9" height="9" fill="var(--line)" stroke="var(--mut)" stroke-width=".6"/><text x="${L+84}" y="8">Grid-only rule</text>`;
+ $('wf').innerHTML=s})();
+const mx=D.imp[0][1];$('imp').innerHTML=D.imp.map(i=>`<div class="imp"><span>${i[0]}</span><i style="width:${i[1]/mx*100}%"></i><span>${Math.round(i[1]*100)}%</span></div>`).join('');
+</script></body></html>
